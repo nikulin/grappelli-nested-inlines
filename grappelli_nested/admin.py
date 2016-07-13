@@ -14,6 +14,7 @@ from django.utils.translation import ugettext as _
 from grappelli_nested.forms import BaseNestedModelForm, BaseNestedInlineFormSet
 from grappelli_nested.helpers import AdminErrorList
 
+
 class NestedModelAdmin(ModelAdmin):
     form = BaseNestedModelForm
 
@@ -166,7 +167,7 @@ class NestedModelAdmin(ModelAdmin):
 
         ModelForm = self.get_form(request)
         formsets = []
-        inline_instances = self.get_inline_instances(request, None)
+
         if request.method == 'POST':
             form = ModelForm(request.POST, request.FILES)
             if form.is_valid():
@@ -176,7 +177,7 @@ class NestedModelAdmin(ModelAdmin):
                 form_validated = False
                 new_object = self.model()
             prefixes = {}
-            for FormSet, inline in zip(self.get_formsets(request), inline_instances):
+            for FormSet, inline in self.get_formsets_with_inlines(request):
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1 or not prefix:
@@ -206,7 +207,7 @@ class NestedModelAdmin(ModelAdmin):
                     initial[k] = initial[k].split(",")
             form = ModelForm(initial=initial)
             prefixes = {}
-            for FormSet, inline in zip(self.get_formsets(request), inline_instances):
+            for FormSet, inline in self.get_formsets_with_inlines(request):
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1 or not prefix:
@@ -280,7 +281,7 @@ class NestedModelAdmin(ModelAdmin):
                 form_validated = False
                 new_object = obj
             prefixes = {}
-            for FormSet, inline in zip(self.get_formsets(request, new_object), inline_instances):
+            for FormSet, inline in self.get_formsets_with_inlines(request, new_object):
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1 or not prefix:
@@ -301,7 +302,7 @@ class NestedModelAdmin(ModelAdmin):
         else:
             form = ModelForm(instance=obj)
             prefixes = {}
-            for FormSet, inline in zip(self.get_formsets(request, obj), inline_instances):
+            for FormSet, inline in self.get_formsets_with_inlines(request, obj):
                 prefix = FormSet.get_default_prefix()
                 prefixes[prefix] = prefixes.get(prefix, 0) + 1
                 if prefixes[prefix] != 1 or not prefix:
@@ -344,6 +345,7 @@ class NestedModelAdmin(ModelAdmin):
         context.update(extra_context or {})
         return self.render_change_form(request, context, change=True, obj=obj, form_url=form_url)
 
+
 class NestedInlineModelAdmin(InlineModelAdmin):
     inlines = []
     formset = BaseNestedInlineFormSet
@@ -368,12 +370,15 @@ class NestedInlineModelAdmin(InlineModelAdmin):
 
         return inline_instances
 
-    def get_formsets(self, request, obj=None):
+    def get_formsets_with_inlines(self, request, obj=None):
         for inline in self.get_inline_instances(request, obj):
-            yield inline.get_formset(request, obj)
+            yield inline.get_formset(request, obj), inline
+
 
 class NestedStackedInline(NestedInlineModelAdmin):
     template = 'admin/edit_inline/stacked.html'
 
+
 class NestedTabularInline(NestedInlineModelAdmin):
     template = 'admin/edit_inline/tabular.html'
+
