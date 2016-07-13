@@ -73,41 +73,38 @@ class NestedModelAdmin(ModelAdmin):
                 keys = request.POST.keys()
                 has_params = any(s.startswith(prefix) for s in keys)
                 if request.method == 'POST' and has_params:
-                    nested_formset = InlineFormSet(
-                                    request.POST,
-                                    request.FILES,
-                                    save_as_new="_saveasnew" in request.POST,
-                                    instance=form.instance,
-                                    prefix=prefix,
-                                )
+                    nested_formset = InlineFormSet(request.POST,
+                                                   request.FILES,
+                                                   save_as_new="_saveasnew" in request.POST,
+                                                   instance=form.instance,
+                                                   prefix=prefix,
+                                                   )
                 else:
                     nested_formset = InlineFormSet(instance=form.instance, prefix=prefix)
                 nested_formsets.append(nested_formset)
                 if nested_inline.inlines:
-                    self.add_nested_inline_formsets(request, nested_inline, nested_formset, depth=depth+1)
+                    self.add_nested_inline_formsets(request, nested_inline, nested_formset, depth=depth + 1)
             form.nested_formsets = nested_formsets
         form = empty_form
         media = None
+
         def get_media(extra_media):
             if media:
                 return media + extra_media
             else:
                 return extra_media
         wrapped_nested_formsets = []
+
         for nested_inline, nested_formset in zip(inline.get_inline_instances(request), form.nested_formsets):
-             if form.instance.pk:
-                    instance = form.instance
-             else:
-                instance = None
-             fieldsets = list(nested_inline.get_fieldsets(request))
-             readonly = list(nested_inline.get_readonly_fields(request))
-             prepopulated = dict(nested_inline.get_prepopulated_fields(request))
-             wrapped_nested_formset = InlineAdminFormSet(nested_inline, nested_formset,
-                 fieldsets, prepopulated, readonly, model_admin=self)
-             wrapped_nested_formsets.append(wrapped_nested_formset)
-             media = get_media(wrapped_nested_formset.media)
-             if nested_inline.inlines:
-                 media = get_media(self.wrap_nested_inline_formsets(request, nested_inline, nested_formset))
+            fieldsets = list(nested_inline.get_fieldsets(request))
+            readonly = list(nested_inline.get_readonly_fields(request))
+            prepopulated = dict(nested_inline.get_prepopulated_fields(request))
+            wrapped_nested_formset = InlineAdminFormSet(nested_inline, nested_formset,
+                fieldsets, prepopulated, readonly, model_admin=self)
+            wrapped_nested_formsets.append(wrapped_nested_formset)
+            media = get_media(wrapped_nested_formset.media)
+            if nested_inline.inlines:
+                media = get_media(self.wrap_nested_inline_formsets(request, nested_inline, nested_formset))
         form.nested_formsets = wrapped_nested_formsets
         formset.__class__.empty_form = empty_form
 
@@ -116,6 +113,7 @@ class NestedModelAdmin(ModelAdmin):
         @TODO someone with more inside knowledge should write done why this is done
         """
         media = None
+
         def get_media(extra_media):
             if media:
                 return media + extra_media
@@ -125,10 +123,6 @@ class NestedModelAdmin(ModelAdmin):
         for form in formset.forms:
             wrapped_nested_formsets = []
             for nested_inline, nested_formset in zip(inline.get_inline_instances(request), form.nested_formsets):
-                if form.instance.pk:
-                    instance = form.instance
-                else:
-                    instance = None
                 fieldsets = list(nested_inline.get_fieldsets(request))
                 readonly = list(nested_inline.get_readonly_fields(request))
                 prepopulated = dict(nested_inline.get_prepopulated_fields(request))
@@ -167,6 +161,7 @@ class NestedModelAdmin(ModelAdmin):
 
         ModelForm = self.get_form(request)
         formsets = []
+        inline_instances = self.get_inline_instances(request, None)
 
         if request.method == 'POST':
             form = ModelForm(request.POST, request.FILES)
@@ -265,9 +260,11 @@ class NestedModelAdmin(ModelAdmin):
             raise Http404(_('%(name)s object with primary key %(key)r does not exist.') % {'name': force_unicode(opts.verbose_name), 'key': escape(object_id)})
 
         if request.method == 'POST' and "_saveasnew" in request.POST:
-            return self.add_view(request, form_url=reverse('admin:%s_%s_add' %
-                                    (opts.app_label, opts.model_name),
-                                    current_app=self.admin_site.name))
+            return self.add_view(request,
+                                 form_url=reverse('admin:%s_%s_add' %
+                                                  (opts.app_label,
+                                                   opts.model_name),
+                                 current_app=self.admin_site.name))
 
         ModelForm = self.get_form(request, obj)
         formsets = []
@@ -381,4 +378,3 @@ class NestedStackedInline(NestedInlineModelAdmin):
 
 class NestedTabularInline(NestedInlineModelAdmin):
     template = 'admin/edit_inline/tabular.html'
-
